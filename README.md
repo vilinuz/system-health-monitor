@@ -21,7 +21,6 @@ We use Docker Compose to orchestrate the entire production-like environment, inc
 ### 1. Start the Complete Stack
 Run the following command to build and start the infrastructure:
 ```bash
-cd system-event-app
 docker compose up -d --build
 ```
 
