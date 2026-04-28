@@ -16,6 +16,14 @@ export interface EventItem {
   };
 }
 
+export interface EventPage {
+  content: EventItem[];
+  totalPages: number;
+  totalElements: number;
+  last: boolean;
+  first: boolean;
+}
+
 interface GraphQLResponse<T> {
   data: T;
 }
@@ -25,58 +33,70 @@ export class GraphqlService {
   private readonly http = inject(HttpClient);
   private readonly graphqlUrl = 'http://localhost:8081/graphql';
 
-  getEventsByServiceId(serviceId: string, severity?: string): Observable<EventItem[]> {
+  getEventsByServiceId(serviceId: string, severity?: string, page = 0, size = 20): Observable<EventPage> {
     const query = `
-      query GetEvents($serviceId: ID, $severity: String) {
-        events(serviceId: $serviceId, severity: $severity) {
-          id
-          severity
-          message
-          timestamp
-          service {
+      query GetEvents($serviceId: ID, $severity: String, $page: Int, $size: Int) {
+        events(serviceId: $serviceId, severity: $severity, page: $page, size: $size) {
+          content {
             id
-            name
-            environment
-            owner
-            status
+            severity
+            message
+            timestamp
+            service {
+              id
+              name
+              environment
+              owner
+              status
+            }
           }
+          totalPages
+          totalElements
+          last
+          first
         }
       }
     `;
 
-    const variables: Record<string, string | undefined> = { serviceId };
+    const variables: any = { serviceId, page, size };
     if (severity && severity !== 'ALL') {
       variables['severity'] = severity;
     }
 
     return this.http
-      .post<GraphQLResponse<{ events: EventItem[] }>>(this.graphqlUrl, { query, variables })
+      .post<GraphQLResponse<{ events: EventPage }>>(this.graphqlUrl, { query, variables })
       .pipe(map(res => res.data.events));
   }
 
-  getEventsByServiceName(serviceName: string): Observable<EventItem[]> {
+  getEventsByServiceName(serviceName: string, page = 0, size = 20): Observable<EventPage> {
     const query = `
-      query GetEventsByService($serviceName: String!) {
-        eventsByService(serviceName: $serviceName) {
-          id
-          severity
-          message
-          timestamp
-          service {
+      query GetEventsByService($serviceName: String!, $page: Int, $size: Int) {
+        eventsByService(serviceName: $serviceName, page: $page, size: $size) {
+          content {
             id
-            name
-            environment
-            owner
-            status
+            severity
+            message
+            timestamp
+            service {
+              id
+              name
+              environment
+              owner
+              status
+            }
           }
+          totalPages
+          totalElements
+          last
+          first
         }
       }
     `;
 
     return this.http
-      .post<GraphQLResponse<{ eventsByService: EventItem[] }>>(this.graphqlUrl, {
+      .post<GraphQLResponse<{ eventsByService: EventPage }>>(this.graphqlUrl, {
         query,
-        variables: { serviceName },
+        variables: { serviceName, page, size },
       })
       .pipe(map(res => res.data.eventsByService));
   }

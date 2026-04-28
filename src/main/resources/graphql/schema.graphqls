@@ -1,6 +1,14 @@
 type Query {
-    events(serviceId: ID, severity: String): [Event!]!
-    eventsByService(serviceName: String!): [Event!]!
+    events(serviceId: ID, severity: String, page: Int, size: Int): EventPage!
+    eventsByService(serviceName: String!, page: Int, size: Int): EventPage!
+}
+
+type EventPage {
+    content: [Event!]!
+    totalPages: Int!
+    totalElements: Int!
+    last: Boolean!
+    first: Boolean!
 }
 
 type Event {

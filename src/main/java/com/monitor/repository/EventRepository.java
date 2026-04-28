@@ -2,11 +2,12 @@ package com.monitor.repository;
 
 import com.monitor.domain.Event;
 import com.monitor.domain.Severity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -22,14 +23,14 @@ import java.util.UUID;
 public interface EventRepository extends JpaRepository<Event, UUID> {
 
     @EntityGraph(attributePaths = {"service"})
-    List<Event> findByServiceIdOrderByTimestampDesc(UUID serviceId);
+    Page<Event> findByServiceId(UUID serviceId, Pageable pageable);
 
     @EntityGraph(attributePaths = {"service"})
-    List<Event> findByServiceIdAndSeverityOrderByTimestampDesc(UUID serviceId, Severity severity);
+    Page<Event> findByServiceIdAndSeverity(UUID serviceId, Severity severity, Pageable pageable);
 
     @EntityGraph(attributePaths = {"service"})
-    List<Event> findBySeverityOrderByTimestampDesc(Severity severity);
+    Page<Event> findBySeverity(Severity severity, Pageable pageable);
 
     @EntityGraph(attributePaths = {"service"})
-    List<Event> findAllByOrderByTimestampDesc();
+    Page<Event> findAll(Pageable pageable);
 }

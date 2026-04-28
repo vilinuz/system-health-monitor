@@ -64,5 +64,30 @@
         </div>
       }
     </div>
+
+    @if (totalPages() > 1) {
+      <div class="pagination-controls glass-card">
+        <button 
+          class="btn btn-secondary" 
+          [disabled]="currentPage() === 0" 
+          (click)="prevPage()"
+          id="btn-prev">
+          Previous
+        </button>
+        
+        <span class="pagination-info">
+          Page <strong>{{ currentPage() + 1 }}</strong> of {{ totalPages() }}
+          <span class="total-elements">({{ totalElements() }} total)</span>
+        </span>
+
+        <button 
+          class="btn btn-secondary" 
+          [disabled]="currentPage() === totalPages() - 1" 
+          (click)="nextPage()"
+          id="btn-next">
+          Next
+        </button>
+      </div>
+    }
   }
 </div>

@@ -5,12 +5,14 @@ import com.monitor.domain.ServiceEntity;
 import com.monitor.domain.Severity;
 import com.monitor.repository.EventRepository;
 import com.monitor.repository.ServiceRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
 import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.stereotype.Controller;
 
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -37,38 +39,55 @@ public class EventGraphQLController {
     }
 
     @QueryMapping
-    public List<Event> events(@Argument String serviceId, @Argument String severity) {
+    public Page<Event> events(@Argument String serviceId, 
+                              @Argument String severity,
+                              @Argument Integer page,
+                              @Argument Integer size) {
+        
+        int pageNum = (page != null) ? page : 0;
+        int pageSize = (size != null) ? size : 20;
+        var pageable = PageRequest.of(pageNum, pageSize, Sort.by("timestamp").descending());
+
         // Both filters provided
         if (serviceId != null && severity != null) {
-            return eventRepository.findByServiceIdAndSeverityOrderByTimestampDesc(
+            return eventRepository.findByServiceIdAndSeverity(
                     UUID.fromString(serviceId),
-                    Severity.valueOf(severity.toUpperCase())
+                    Severity.valueOf(severity.toUpperCase()),
+                    pageable
             );
         }
 
         // Filter by service only
         if (serviceId != null) {
-            return eventRepository.findByServiceIdOrderByTimestampDesc(
-                    UUID.fromString(serviceId)
+            return eventRepository.findByServiceId(
+                    UUID.fromString(serviceId),
+                    pageable
             );
         }
 
         // Filter by severity only
         if (severity != null) {
-            return eventRepository.findBySeverityOrderByTimestampDesc(
-                    Severity.valueOf(severity.toUpperCase())
+            return eventRepository.findBySeverity(
+                    Severity.valueOf(severity.toUpperCase()),
+                    pageable
             );
         }
 
         // No filters — return all
-        return eventRepository.findAllByOrderByTimestampDesc();
+        return eventRepository.findAll(pageable);
     }
 
     @QueryMapping
-    public List<Event> eventsByService(@Argument String serviceName) {
+    public Page<Event> eventsByService(@Argument String serviceName,
+                                       @Argument Integer page,
+                                       @Argument Integer size) {
+        int pageNum = (page != null) ? page : 0;
+        int pageSize = (size != null) ? size : 20;
+        var pageable = PageRequest.of(pageNum, pageSize, Sort.by("timestamp").descending());
+
         var service = serviceRepository.findByName(serviceName)
                 .orElseThrow(() -> new IllegalArgumentException("Service not found: " + serviceName));
-        return eventRepository.findByServiceIdOrderByTimestampDesc(service.getId());
+        return eventRepository.findByServiceId(service.getId(), pageable);
     }
 
     @SchemaMapping(typeName = "Event", field = "service")

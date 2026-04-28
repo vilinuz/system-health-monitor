@@ -30,16 +30,25 @@ export class EventLogComponent implements OnInit, OnDestroy {
   readonly loading = signal(true);
   readonly severityFilter = signal('ALL');
 
+  // Pagination state
+  readonly currentPage = signal(0);
+  readonly pageSize = signal(20);
+  readonly totalPages = signal(0);
+  readonly totalElements = signal(0);
+
   readonly filteredEvents = computed(() => {
-    const filter = this.severityFilter();
-    if (filter === 'ALL') return this.events();
-    return this.events().filter(e => e.severity === filter);
+    return this.events();
   });
 
   readonly severityCounts = computed((): Record<string, number> => {
+    // Note: With server-side pagination, these counts should ideally come from the server 
+    // for the entire dataset, but for now we'll just show the count for the current page 
+    // or keep it simple as it was if we want to avoid extra backend calls.
+    // The previous implementation used client-side filtering on a full list.
+    // Since we now paginate on the server, this component only sees one page at a time.
     const evts = this.events();
     return {
-      ALL: evts.length,
+      ALL: this.totalElements(),
       INFO: evts.filter(e => e.severity === 'INFO').length,
       WARN: evts.filter(e => e.severity === 'WARN').length,
       ERROR: evts.filter(e => e.severity === 'ERROR').length,
@@ -68,9 +77,16 @@ export class EventLogComponent implements OnInit, OnDestroy {
   }
 
   loadEvents() {
-    this.graphqlService.getEventsByServiceId(this.serviceId).subscribe({
-      next: (data) => {
-        this.events.set(data);
+    this.graphqlService.getEventsByServiceId(
+      this.serviceId, 
+      this.severityFilter(),
+      this.currentPage(),
+      this.pageSize()
+    ).subscribe({
+      next: (page) => {
+        this.events.set(page.content);
+        this.totalPages.set(page.totalPages);
+        this.totalElements.set(page.totalElements);
         this.loading.set(false);
       },
       error: () => this.loading.set(false),
@@ -79,6 +95,22 @@ export class EventLogComponent implements OnInit, OnDestroy {
 
   setSeverityFilter(severity: string) {
     this.severityFilter.set(severity);
+    this.currentPage.set(0); // Reset to first page on filter change
+    this.loadEvents();
+  }
+
+  nextPage() {
+    if (this.currentPage() < this.totalPages() - 1) {
+      this.currentPage.update(p => p + 1);
+      this.loadEvents();
+    }
+  }
+
+  prevPage() {
+    if (this.currentPage() > 0) {
+      this.currentPage.update(p => p - 1);
+      this.loadEvents();
+    }
   }
 
   goBack() {
